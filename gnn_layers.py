@@ -48,7 +48,6 @@ class Gconv(nn.Module):
         #    x = torch.abs(x)
         x_size = x.size()
         x = x.contiguous()
-        # print('11111111111111',x.shape)
         x = x.view(-1, self.num_inputs)  # 重新整理x的结构 - reshape the input x
         x = self.fc(x)  # has size (bs*N, num_outputs)
 

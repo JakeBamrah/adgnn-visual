@@ -14,7 +14,7 @@ import numpy as np
 import torch.utils.data as data
 import random
 import torch
-import gnn_model_w_change as models
+import gnn_models as models
 import argparse
 import torch.optim as optim
 import torch.nn.functional as F
@@ -34,7 +34,7 @@ RESULT_PATH = Path("results/")
 DATA_PATH = Path("data/")
 
 # tensorboard summary writer
-WRITER_PATH = 'runs/amgnn_exp_2'
+WRITER_PATH = 'runs/amgnn_exp2'
 tb = SummaryWriter(WRITER_PATH)
 
 parser = argparse.ArgumentParser(description='AMGNN')
@@ -60,7 +60,7 @@ parser.add_argument('--w_feature_list', type=int, default=5, metavar='N',
                    help='feature list for w computation')
 # 0-4,1-9，2-5,3-13,4-9，5-14,6-18
 # 0-4,1-9，2-10,3-13,4-14，5-19,6-23
-parser.add_argument('--iterations', type=int, default=500, metavar='N',
+parser.add_argument('--iterations', type=int, default=300, metavar='N',
                     help='number of epochs to train ')
 parser.add_argument('--dec_lr', type=int, default=10000, metavar='N',
                     help='Decreasing the learning rate every x iterations')
@@ -104,14 +104,15 @@ def adjust_learning_rate(optimizers, lr, iter, writer=None):
 
 class Generator(data.DataLoader):
     """Data loader for model training"""
-    def __init__(self, root,keys = ['CN','MCI', 'AD']):
+    def __init__(self, root, keys=['CN','MCI', 'AD']):
         with open(root, 'rb') as load_data:
             data_dict = pickle.load(load_data)
+
         data_ = {}
         for i in range(len(keys)):
-            data_[i]= data_dict[keys[i]]
+            data_[i] = data_dict[keys[i]]
         self.data = data_
-        self.channal = 1
+        self.channel = 1
         self.feature_shape = np.array((self.data[1][0])).shape
 
     def cast_cuda(self, input):
@@ -217,6 +218,7 @@ def compute_adj(batch_x, batches_xi):
     adj = torch.from_numpy(adj)
     return adj.cuda()
 
+
 def train_batch(model, data):
     """Train a model on selected data sample"""
     # NOTE: model training
@@ -224,7 +226,11 @@ def train_batch(model, data):
     [batch_x, label_x, batches_xi, labels_yi, oracles_yi] = data
 
     # NOTE: separate features per batch
-    z_clinical, z_mri_feature = batch_x[:, 0, 0, 0:args.clinical_feature_num], batch_x[:, :, :, args.clinical_feature_num:]
+    # slice the first four features which are our risk factors
+    z_clinical = batch_x[:, 0, 0, 0:args.clinical_feature_num]
+
+    # slice the remaining 27 features after our clinical / risk factors
+    z_mri_feature = batch_x[:, :, :, args.clinical_feature_num:]
     zi_s_clinical = [batch_xi[:,0,0,0:args.clinical_feature_num] for batch_xi in batches_xi]
     zi_s_mri_feature = [batch_xi[:, :, :, args.clinical_feature_num:] for batch_xi in batches_xi]
 
@@ -351,6 +357,7 @@ def record_amgnn_module_metrics(amgnn, writer):
 
 def write_model_graph(amgnn, training_data):
     writer.add_graph(amgnn, training_data)
+    return
 
 
 if __name__ =='__main__':
@@ -413,6 +420,7 @@ if __name__ =='__main__':
             io.cprint(display_str)
             counter = 0
             total_loss = 0
+
         ####################
         # Test
         ####################
