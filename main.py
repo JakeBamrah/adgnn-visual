@@ -14,7 +14,6 @@ import numpy as np
 import torch.utils.data as data
 import random
 import torch
-import gnn_models as models
 import argparse
 import torch.optim as optim
 import torch.nn.functional as F
@@ -28,13 +27,15 @@ import time
 import textwrap
 from pathlib import Path
 
+import visualize
+import gnn_models as models
 
 
 RESULT_PATH = Path("results/")
 DATA_PATH = Path("data/")
 
 # tensorboard summary writer
-WRITER_PATH = 'runs/amgnn_exp2'
+WRITER_PATH = 'runs/amgnn_exp3'
 tb = SummaryWriter(WRITER_PATH)
 
 parser = argparse.ArgumentParser(description='AMGNN')
@@ -125,13 +126,13 @@ class Generator(data.DataLoader):
 
     def get_task_batch(self, batch_size=5, n_way=4, num_shots=10, unlabeled_extra=0, cuda=False, variable=False):
         # init
-        batch_x = np.zeros((batch_size,self.channal,self.feature_shape[0],self.feature_shape[1]), dtype='float32')  # features
+        batch_x = np.zeros((batch_size,self.channel, self.feature_shape[0],self.feature_shape[1]), dtype='float32')  # features
         labels_x = np.zeros((batch_size, n_way), dtype='float32')  # labels
         labels_x_global = np.zeros(batch_size, dtype='int64')
         numeric_labels = []
         batches_xi, labels_yi, oracles_yi = [], [], []
         for i in range(n_way * num_shots):
-            batches_xi.append(np.zeros((batch_size,self.channal,self.feature_shape[0],self.feature_shape[1]), dtype='float32'))
+            batches_xi.append(np.zeros((batch_size,self.channel, self.feature_shape[0],self.feature_shape[1]), dtype='float32'))
             labels_yi.append(np.zeros((batch_size, n_way), dtype='float32'))
             oracles_yi.append((np.zeros((batch_size, n_way), dtype='float32')))
 
@@ -337,24 +338,6 @@ def test_one_shot(args, fold, test_root, model, test_samples=50, partition='test
     return correct, accuracy, loss_test_f
 
 
-def record_amgnn_module_metrics(amgnn, writer):
-    """Expects AMGNN module and tensorboard summary writer"""
-
-    for id, l in enumerate(amgnn.gnn_obj.modules()):
-        class_name = l.__class__.__name__
-        if class_name == 'Wcompute':
-            bias, weight = l.conv2d_last.bias, l.conv2d_last.weight
-            writer.add_histogram(f'{class_name}-{id} bias', bias)
-            writer.add_histogram(f'{class_name}-{id} weight', weight)
-
-        if class_name == 'Gconv':
-            bias, weight = l.fc.bias, l.fc.weight
-            writer.add_histogram(f'{class_name}-{id} bias', bias)
-            writer.add_histogram(f'{class_name}-{id} weight', weight)
-
-    return writer
-
-
 def write_model_graph(amgnn, training_data):
     writer.add_graph(amgnn, training_data)
     return
@@ -437,7 +420,7 @@ if __name__ =='__main__':
             tb.add_scalar("Correct", test_correct, batch_idx)
             tb.add_scalar("Accuracy", test_acc_aux, batch_idx)
 
-            tb = record_amgnn_module_metrics(amgnn, tb)
+            tb = visualize.record_amgnn_module_metrics(amgnn, tb)
 
 
             amgnn.train()
