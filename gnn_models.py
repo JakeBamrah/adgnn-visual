@@ -69,6 +69,45 @@ class AMGNN(nn.Module):
     #     [z_c, z, zi_c, zi_s, labels_yi, _, adj] = inputs
     #     return self.gnn_iclr_forward(z_c, z, zi_c, zi_s, labels_yi, adj)
 
+    def compute_adj(self, batch_x, batches_xi):
+        """Compute adjacency matrix of Graph Neural Network"""
+        x = torch.squeeze(batch_x)
+        xi_s = [torch.squeeze(batch_xi) for batch_xi in batches_xi]
 
-def create_models(args,cnn_dim1 = 4):
+        nodes = [x] + xi_s
+        nodes = [node.unsqueeze(1) for node in nodes]
+        nodes = torch.cat(nodes, 1)
+        age = nodes.narrow(2, 0, 1)
+        age = age.cpu().numpy()
+        gender = nodes.narrow(2, 1, 1)
+        gendre = gender.cpu().numpy()
+        apoe = nodes.narrow(2, 2, 1)
+        apoe = apoe.cpu().numpy()
+        edu = nodes.narrow(2, 3, 1)
+        edu = edu.cpu().numpy()
+        adj = np.ones(
+            (self.args.batch_size, self.args.train_N_way * self.args.train_N_shots + 1, self.args.train_N_way * self.args.train_N_shots + 1, 1),
+            dtype='float32')+4
+
+        for batch_num in range(self.args.batch_size):
+            for i in range(self.args.train_N_way * self.args.train_N_shots + 1):
+                for j in range(i + 1, self.args.train_N_way * self.args.train_N_shots + 1):
+                    if np.abs(age[batch_num, i, 0] - age[batch_num, j, 0]) <= 0.06:
+                        adj[batch_num, i, j, 0] -= 1
+                        adj[batch_num, j, i, 0] -= 1
+                    if np.abs(edu[batch_num, i, 0] - edu[batch_num, j, 0]) <= 0.14:
+                        adj[batch_num, i, j, 0] -= 1
+                        adj[batch_num, j, i, 0] -= 1
+                    if gendre[batch_num, i, 0] == gendre[batch_num, j, 0]:
+                        adj[batch_num, i, j, 0] -= 1
+                        adj[batch_num, j, i, 0] -= 1
+                    if apoe[batch_num, i, 0] == apoe[batch_num, j, 0]:
+                        adj[batch_num, i, j, 0] -= 1
+                        adj[batch_num, j, i, 0] -= 1
+        adj = 1/adj
+        adj = torch.from_numpy(adj)
+        return adj.cuda()
+
+
+def create_models(args, cnn_dim1 = 4):
     return AMGNN(args)

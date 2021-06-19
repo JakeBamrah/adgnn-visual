@@ -29,7 +29,6 @@ class Gconv(nn.Module):
 
         x_size = x.size()
         W_size = W.size()
-        # print('W_size:',W_size)
 
         N = W_size[-2]  # N个节点
         W = W.split(1, 3)
@@ -43,12 +42,9 @@ class Gconv(nn.Module):
     def forward(self, input):
         W = input[0]
         x = self.gmul(input)  # out has size (bs, N, num_inputs)
-        #print(x.size())
-        #if self.J == 1:
-        #    x = torch.abs(x)
         x_size = x.size()
         x = x.contiguous()
-        x = x.view(-1, self.num_inputs)  # 重新整理x的结构 - reshape the input x
+        x = x.view(-1, self.num_inputs)  # reshape the input x
         x = self.fc(x)  # has size (bs*N, num_outputs)
 
         if self.bn_bool:
@@ -149,18 +145,17 @@ class Wcompute(nn.Module):
             adj = adj.cuda()
         # W_new = W_new + adj
         W_new = torch.mul(W_new, adj)
-        # W_new = W_new + torch.mul(W_new, adj)
 
         if self.activation == 'softmax':
             W_new = W_new - W_id.expand_as(W_new) * 1e8
             W_new = torch.transpose(W_new, 2, 3)
-            # Applying Softmax
+
+            # apply softmax
             W_new = W_new.contiguous()
             W_new_size = W_new.size()
             W_new = W_new.view(-1, W_new.size(3))
             W_new = F.softmax(W_new, dim = 1)
             W_new = W_new.view(W_new_size)
-            # Softmax applied
             W_new = torch.transpose(W_new, 2, 3)
         elif self.activation == 'sigmoid':
             W_new = F.sigmoid(W_new)
@@ -176,7 +171,6 @@ class Wcompute(nn.Module):
         return W_new
 
 
-# NOTE: GNN used in experiment
 class GNN_nl(nn.Module):
     def __init__(self, args, input_features, nf, J):
         super(GNN_nl, self).__init__()
@@ -184,12 +178,11 @@ class GNN_nl(nn.Module):
         self.input_features = input_features
         self.nf = nf
         self.J = J
-        # self.num_layers = 2
         self.num_layers = 1
 
+        # graph initialisation
         for i in range(self.num_layers):
             if i == 0:
-                # NOTE: Graph initialisation?
                 module_w = Wcompute(
                         args,
                         self.input_features,
@@ -223,14 +216,13 @@ class GNN_nl(nn.Module):
         self.layer_last = Gconv(self.input_features + int(self.nf / 2) * self.num_layers, args.train_N_way, 2, bn_bool=False)
 
     def forward(self,  x, adj):
-        # createing a 2-d tensor of zeros with ones along the diagonal
+        # create a 2-D tensor of zeros with 1's along the diagonal
         W_init = Variable(torch
                 .eye(x.size(1))
                 .unsqueeze(0)
                 .repeat(x.size(0), 1, 1)
                 .unsqueeze(3)
         )
-        # print('w_init: ', W_init.shape)
 
         if self.args.cuda:
             W_init = W_init.cuda()

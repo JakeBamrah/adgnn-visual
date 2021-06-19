@@ -36,3 +36,8 @@ def build_feature_embedding_graph(data, writer, tag="AD samples"):
     features = tensor(features)
     writer.add_embedding(features, metadata=labels, tag=tag)
     return
+
+
+def write_model_graph(amgnn, writer, data):
+    writer.add_graph(amgnn, data)
+    return
