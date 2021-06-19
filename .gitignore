@@ -2,3 +2,4 @@ runs/
 utils/
 results/
 __pycache__/
+run.log
