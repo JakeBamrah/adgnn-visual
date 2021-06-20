@@ -8,11 +8,13 @@ from utils import io_utils
 
 from data import DataGenerator
 
+
 class Predict():
     """
         Provides methods for making Alzheimer's disease predictions on
         a group basis (supervised) and an individual basis (semi-unsupervised)
     """
+
     def __init__(self, amgnn, classifier_module, args):
         self.amgnn = amgnn
         self.classifier_module = classifier_module
@@ -51,7 +53,7 @@ class Predict():
 
         # compute metric from embeddings
         inputs = [z_clinical, z_mri_feature, zi_s_clinical, xi_s, labels_yi, oracles_yi, adj]
-        output, out_logits = self.amgnn(inputs=inputs)
+        output, out_logits = self.amgnn(*inputs)
         output = out_logits
         Y = self.classifier_module.forward(output)
         y_pred = self.classifier_module.forward(output)
@@ -75,7 +77,8 @@ class Predict():
         """
             Predict AD diagnosis for a single patient using neighbours of GNN.
             Returns prediction, original node and the samples used.
-            All nodes are returned in torch.tensor format.
+            All nodes are returned in torch.tensor format with shape:
+
         """
 
         loader = DataGenerator(data_root, keys=['CN','MCI','AD'])
@@ -87,7 +90,7 @@ class Predict():
                 cuda = self.args.cuda
         )
 
-        [batch_x, label_x, *rest] = data
+        [batch_x, *rest] = data
         _, y_pred, actual_labels = self.predict_nodes_using_one_shot(data)
 
         # separate predicted node and labelled nodes

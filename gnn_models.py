@@ -59,15 +59,10 @@ class AMGNN(nn.Module):
 
         return outputs, logits
 
-    def forward(self, inputs):
-        # original forward
+    def forward(self, *inputs):
+        # we use *args to make this method tensorboard compatible
         [z_c, z, zi_c, zi_s, labels_yi, _, adj] = inputs
         return self.gnn_iclr_forward(z_c, z, zi_c, zi_s, labels_yi, adj)
-
-    # def forward(self, *inputs):
-    #     # tensorboard compatible forward method
-    #     [z_c, z, zi_c, zi_s, labels_yi, _, adj] = inputs
-    #     return self.gnn_iclr_forward(z_c, z, zi_c, zi_s, labels_yi, adj)
 
     def compute_adj(self, batch_x, batches_xi):
         """Compute adjacency matrix of Graph Neural Network"""

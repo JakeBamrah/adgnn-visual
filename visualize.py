@@ -2,7 +2,7 @@ from torch import tensor
 from torch.utils.tensorboard import SummaryWriter
 
 
-def record_amgnn_module_metrics(amgnn, writer):
+def record_amgnn_bias_metrics(amgnn, writer):
     """Expects AMGNN module and tensorboard summary writer"""
 
     for id, l in enumerate(amgnn.gnn_obj.modules()):
@@ -41,3 +41,7 @@ def build_feature_embedding_graph(data, writer, tag="AD samples"):
 def write_model_graph(amgnn, writer, data):
     writer.add_graph(amgnn, data)
     return
+
+def build_graph_pipeline_graph(amgnn, data):
+    pass
+

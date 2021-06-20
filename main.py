@@ -125,7 +125,7 @@ def train_batch(model, data):
     adj = amgnn.compute_adj(z_clinical, zi_s_clinical)
 
     inputs = [z_clinical, z_mri_feature, zi_s_clinical, zi_s_mri_feature, labels_yi, oracles_yi, adj]
-    out_metric, out_logits = amgnn(inputs=inputs)
+    out_metric, out_logits = amgnn(*inputs)
     logsoft_prob = softmax_module.forward(out_logits)
 
     # Loss
@@ -193,7 +193,7 @@ if __name__ =='__main__':
 
     print(now_format)
 
-    if name not in os.listdir(RESULT_PATH):
+    if save_path not in os.listdir(RESULT_PATH):
         os.makedirs(save_path)
     io = io_utils.IOStream(RESULT_PATH / 'run.log')
     print('The result will be saved in :', save_path)
@@ -269,7 +269,7 @@ if __name__ =='__main__':
             tb.add_scalar("Correct", test_correct, batch_idx)
             tb.add_scalar("Accuracy", test_acc_aux, batch_idx)
 
-            tb = visualize.record_amgnn_module_metrics(amgnn, tb)
+            tb = visualize.record_amgnn_bias_metrics(amgnn, tb)
 
 
             amgnn.train()

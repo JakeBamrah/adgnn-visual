@@ -40,7 +40,7 @@ class DataGenerator(data.DataLoader):
             labels_yi.append(np.zeros((batch_size, n_way), dtype='float32'))
             oracles_yi.append((np.zeros((batch_size, n_way), dtype='float32')))
 
-        # feed data
+        # build data batches
         for batch_counter in range(batch_size):
             pre_class = random.randint(0, n_way - 1)
             indexes_perm = np.random.permutation(n_way * num_shots)
@@ -50,12 +50,12 @@ class DataGenerator(data.DataLoader):
                     # take num_shots + one sample for one class
                     samples = random.sample(self.data[class_num], num_shots + 1)
 
-                    # Test sample
+                    # for each sample in batch, provide a set of test samples
                     if valid_unlabelled_node and batch_counter == batch_size - 1:
                         batch_x[batch_counter,0, :,:] = unlabelled_node
                     else:
                         batch_x[batch_counter,0, :,:] = samples[0]
-                        # one hot encode label
+                        # one hot encode label for labelled samples
                         labels_x[batch_counter, class_num] = 1
 
                     samples = samples[1::]
