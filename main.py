@@ -116,10 +116,10 @@ def train_batch(model, data):
     # NOTE: separate features per batch
     # slice the first four features which are our risk factors
     z_clinical = batch_x[:, 0, 0, 0:args.clinical_feature_num]
+    zi_s_clinical = [batch_xi[:,0,0,0:args.clinical_feature_num] for batch_xi in batches_xi]
 
     # slice the remaining 27 features after our clinical / risk factors
     z_mri_feature = batch_x[:, :, :, args.clinical_feature_num:]
-    zi_s_clinical = [batch_xi[:,0,0,0:args.clinical_feature_num] for batch_xi in batches_xi]
     zi_s_mri_feature = [batch_xi[:, :, :, args.clinical_feature_num:] for batch_xi in batches_xi]
 
     adj = amgnn.compute_adj(z_clinical, zi_s_clinical)
@@ -260,9 +260,11 @@ if __name__ =='__main__':
 
             test_samples = 320
             test_root = DATA_PATH / 'AD_3_CLASS_TEST.pkl'
-            test_correct, test_acc_aux, test_loss_ = test_one_shot(args, 0, test_root, model=[amgnn, softmax_module],
-                                                     test_samples=test_samples, partition='test',
-                                                     io_path=save_path / 'run.log')
+            test_correct, test_acc_aux, test_loss_ = test_one_shot(
+                            args, 0, test_root, model=[amgnn, softmax_module],
+                            test_samples=test_samples, partition='test',
+                            io_path=save_path / 'run.log'
+                        )
 
             # record testing metrics for batch
             tb.add_scalar("Loss", test_loss_, batch_idx)

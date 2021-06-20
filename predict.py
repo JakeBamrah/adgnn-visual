@@ -29,8 +29,10 @@ class Predict():
 
         [x_t, labels_x_cpu_t, _, _, xi_s, labels_yi_cpu, oracles_yi] = data
 
-        z_clinical, z_mri_feature = x_t[:, 0, 0, 0:self.args.clinical_feature_num],x_t[:, :, :, self.args.clinical_feature_num:]
+        z_clinical = x_t[:, 0, 0, 0:self.args.clinical_feature_num]
         zi_s_clinical = [batch_xi[:, 0, 0, 0:self.args.clinical_feature_num] for batch_xi in xi_s]
+
+        z_mri_feature = x_t[:, :, :, self.args.clinical_feature_num:]
         zi_s_mri_feature = [batch_xi[:, :, :,self.args.clinical_feature_num:] for batch_xi in xi_s]
 
         adj = self.amgnn.compute_adj(z_clinical, zi_s_clinical)
@@ -54,9 +56,8 @@ class Predict():
         # compute metric from embeddings
         inputs = [z_clinical, z_mri_feature, zi_s_clinical, xi_s, labels_yi, oracles_yi, adj]
         output, out_logits = self.amgnn(*inputs)
-        output = out_logits
-        Y = self.classifier_module.forward(output)
-        y_pred = self.classifier_module.forward(output)
+        Y = self.classifier_module.forward(out_logits)
+        y_pred = self.classifier_module.forward(out_logits)
 
         y_pred = y_pred.data.cpu().numpy()
         y_inter = [list(y_i) for y_i in y_pred]
