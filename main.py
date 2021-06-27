@@ -35,7 +35,7 @@ from data import DataGenerator
 
 
 RESULT_PATH = Path("results/")
-DATA_PATH = Path("data/")
+DATA_PATH = Path("data_prep/data/")
 
 # tensorboard summary writer
 WRITER_PATH = 'runs/patient_prediction_scratch/'
@@ -55,16 +55,15 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate (default: 0.001)')
-parser.add_argument('--feature_num', type=int, default=31, metavar='N',
+parser.add_argument('--feature_num', type=int, default=195, metavar='N',
                     help='feature number of one sample')
-parser.add_argument('--clinical_feature_num', type=int, default=4, metavar='N',
+parser.add_argument('--clinical_feature_num', type=int, default=5, metavar='N',
                     help='clinical feature number of one sample')
-parser.add_argument('--w_feature_num', type=int, default=27, metavar='N',
+parser.add_argument('--w_feature_num', type=int, default=190, metavar='N',
                     help='feature number for w computation')
 parser.add_argument('--w_feature_list', type=int, default=5, metavar='N',
                    help='feature list for w computation')
-# 0-4,1-9，2-5,3-13,4-9，5-14,6-18
-# 0-4,1-9，2-10,3-13,4-14，5-19,6-23
+
 parser.add_argument('--iterations', type=int, default=300, metavar='N',
                     help='number of epochs to train ')
 parser.add_argument('--dec_lr', type=int, default=10000, metavar='N',
@@ -79,7 +78,8 @@ parser.add_argument('--batch_size_train', type=int, default=64, metavar='batch_s
                     help='Size of batch)')
 parser.add_argument('--test_interval', type=int, default=200, metavar='N',
                     help='how many batches between each test')
-parser.add_argument('--random_seed', type=int, default=2019, metavar='N')
+parser.add_argument('--random_seed', type=int, default=2021, metavar='N')
+
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 print('GPU:', args.cuda)
@@ -114,11 +114,11 @@ def train_batch(model, data):
     [batch_x, label_x, batches_xi, labels_yi, oracles_yi] = data
 
     # NOTE: separate features per batch
-    # slice the first four features which are our risk factors
+    # slice the first five features which are our risk factors
     z_clinical = batch_x[:, 0, 0, 0:args.clinical_feature_num]
     zi_s_clinical = [batch_xi[:,0,0,0:args.clinical_feature_num] for batch_xi in batches_xi]
 
-    # slice the remaining 27 features after our clinical / risk factors
+    # slice the remaining features after our clinical / risk factors
     z_mri_feature = batch_x[:, :, :, args.clinical_feature_num:]
     zi_s_mri_feature = [batch_xi[:, :, :, args.clinical_feature_num:] for batch_xi in batches_xi]
 
@@ -140,7 +140,7 @@ def train_batch(model, data):
     return loss
 
 
-def test_one_shot(args, fold, test_root, model, test_samples=50, partition='test', io_path= 'run.log', write_model_graph=False):
+def test_one_shot(args, fold, test_root, model, test_samples=50, partition='test', io_path='results/run.log', write_model_graph=False):
     io = io_utils.IOStream(io_path)
 
     io.cprint('\n**** TESTING BEGIN ***' )
@@ -150,7 +150,7 @@ def test_one_shot(args, fold, test_root, model, test_samples=50, partition='test
     amgnn.eval()
     correct = 0
     total = 0
-    iterations = int(test_samples / args.batch_size_test) # 320 / 64
+    iterations = 4
 
     for i in range(iterations):
         data = data_loader.get_task_batch(
@@ -195,7 +195,10 @@ if __name__ =='__main__':
 
     if save_path not in os.listdir(RESULT_PATH):
         os.makedirs(save_path)
-    io = io_utils.IOStream(RESULT_PATH / 'run.log')
+
+    io_path = RESULT_PATH / 'run.log'
+    io = io_utils.IOStream(io_path)
+
     print('The result will be saved in :', save_path)
     setup_seed(args.random_seed)
 
@@ -203,7 +206,7 @@ if __name__ =='__main__':
 
     # initialise softmax and prediction modules
     softmax_module = models.SoftmaxModule()
-    predict = Predict(amgnn, softmax_module, args)
+    predict = Predict(amgnn, softmax_module, args, io_path)
     io.cprint(str(amgnn))
 
 
@@ -225,7 +228,7 @@ if __name__ =='__main__':
 
     for batch_idx in range(args.iterations):
 
-        root = DATA_PATH / 'AD_3_CLASS_TRAIN.pkl'
+        root = DATA_PATH / 'ad_class_train.npy'
         data_loader = DataGenerator(root, keys=['CN', 'MCI','AD'])
         data = data_loader.get_task_batch(
                 batch_size=args.batch_size_train,
@@ -258,12 +261,12 @@ if __name__ =='__main__':
         # test trained model performance
         if (batch_idx + 1) % args.log_interval == 0:
 
-            test_samples = 320
-            test_root = DATA_PATH / 'AD_3_CLASS_TEST.pkl'
+            test_samples = 112
+            test_root = DATA_PATH / 'ad_class_test.npy'
             test_correct, test_acc_aux, test_loss_ = test_one_shot(
                             args, 0, test_root, model=[amgnn, softmax_module],
                             test_samples=test_samples, partition='test',
-                            io_path=save_path / 'run.log'
+                            io_path=io_path
                         )
 
             # record testing metrics for batch

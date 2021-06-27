@@ -3,6 +3,7 @@ utils/
 results/
 __pycache__/
 
+data/
 data_prep/working/
 data_prep/combined.csv
 data_prep/.ipynb_checkpoints/

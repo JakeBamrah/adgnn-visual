@@ -15,11 +15,11 @@ class Predict():
         a group basis (supervised) and an individual basis (semi-unsupervised)
     """
 
-    def __init__(self, amgnn, classifier_module, args):
+    def __init__(self, amgnn, classifier_module, args, io_path):
         self.amgnn = amgnn
         self.classifier_module = classifier_module
         self.args = args
-        self.io = io_utils.IOStream('run.log')
+        self.io = io_utils.IOStream(io_path)
 
     def predict_nodes_using_one_shot(self, data):
         """Predict patient Alzheimer's prognosis based on data provided from Generator class"""

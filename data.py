@@ -9,9 +9,8 @@ import pickle
 class DataGenerator(data.DataLoader):
     """Data loader for model training"""
     def __init__(self, root, keys=['CN','MCI', 'AD']):
-        with open(root, 'rb') as load_data:
-            data_dict = pickle.load(load_data)
-
+        raw = np.load(root, allow_pickle=True)
+        data_dict = raw[()]
         data_ = {}
         for i in range(len(keys)):
             data_[i] = data_dict[keys[i]]
