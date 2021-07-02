@@ -47,7 +47,11 @@ class DataGenerator(data.DataLoader):
             for class_num in range(0, n_way):
                 if class_num == pre_class:
                     # take num_shots + one sample for one class
-                    samples = random.sample(self.data[class_num], num_shots + 1)
+                    if num_shots + 1 > len(self.data[class_num]):
+                        increase_by = num_shots - len(self.data[class_num])
+                        samples = generate_random_samples(self.data[class_num], increase_by)
+                    else:
+                        samples = random.sample(self.data[class_num], num_shots + 1)
 
                     # for each sample in batch, provide a set of test samples
                     if valid_unlabelled_node and batch_counter == batch_size - 1:
@@ -86,3 +90,14 @@ class DataGenerator(data.DataLoader):
         if variable:
             return_arr = self.cast_variable(return_arr)
         return return_arr
+
+
+def generate_random_samples(sample_arr, increase_by=20):
+    """Generate similar arr based on given sample"""
+    gen_items = []
+    for i in range(increase_by):
+        idx = random.randint(0, len(sample_arr) - 1)
+        change = 1 - random.uniform(0, 0.1)
+        gen_items.append(sample_arr[idx] * change)
+
+    return sample_arr + gen_items

@@ -190,15 +190,13 @@ if __name__ =='__main__':
     now = datetime.datetime.now()
     now_format = now.strftime('%Y-%m-%d-%H-%M')
     save_path = RESULT_PATH / now_format
-
-    print(now_format)
-
-    if save_path not in os.listdir(RESULT_PATH):
+    if not save_path.exists():
         os.makedirs(save_path)
 
     io_path = RESULT_PATH / 'run.log'
     io = io_utils.IOStream(io_path)
 
+    print(now_format)
     print('The result will be saved in :', save_path)
     setup_seed(args.random_seed)
 
@@ -261,7 +259,7 @@ if __name__ =='__main__':
         if (batch_idx + 1) % args.log_interval == 0:
 
             test_samples = 112
-            test_root = DATA_PATH / 'ad_class_test.npy'
+            test_root = DATA_PATH / 'ad_unsupervised_class_test.npy'
             test_correct, test_acc_aux, test_loss_ = test_one_shot(
                             args, 0, test_root, model=[amgnn, softmax_module],
                             test_samples=test_samples, partition='test',
