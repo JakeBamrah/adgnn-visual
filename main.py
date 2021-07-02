@@ -38,7 +38,7 @@ RESULT_PATH = Path("results/")
 DATA_PATH = Path("data_prep/data/")
 
 # tensorboard summary writer
-WRITER_PATH = 'runs/patient_prediction_scratch/'
+WRITER_PATH = 'runs/trained_unsupervised_labels/'
 tb = SummaryWriter(WRITER_PATH)
 
 
@@ -55,11 +55,11 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                     help='learning rate (default: 0.001)')
-parser.add_argument('--feature_num', type=int, default=195, metavar='N',
+parser.add_argument('--feature_num', type=int, default=194, metavar='N',
                     help='feature number of one sample')
 parser.add_argument('--clinical_feature_num', type=int, default=5, metavar='N',
                     help='clinical feature number of one sample')
-parser.add_argument('--w_feature_num', type=int, default=190, metavar='N',
+parser.add_argument('--w_feature_num', type=int, default=189, metavar='N',
                     help='feature number for w computation')
 parser.add_argument('--w_feature_list', type=int, default=5, metavar='N',
                    help='feature list for w computation')
@@ -207,7 +207,6 @@ if __name__ =='__main__':
     # initialise softmax and prediction modules
     softmax_module = models.SoftmaxModule()
     predict = Predict(amgnn, softmax_module, args, io_path)
-    io.cprint(str(amgnn))
 
 
     # NOTE: CNN dimension where one CNN is used for learning the edge weight from the absolute difference
@@ -228,7 +227,7 @@ if __name__ =='__main__':
 
     for batch_idx in range(args.iterations):
 
-        root = DATA_PATH / 'ad_class_train.npy'
+        root = DATA_PATH / 'ad_unsupervised_class_train.npy'
         data_loader = DataGenerator(root, keys=['CN', 'MCI','AD'])
         data = data_loader.get_task_batch(
                 batch_size=args.batch_size_train,
