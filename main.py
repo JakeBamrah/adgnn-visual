@@ -38,7 +38,7 @@ RESULT_PATH = Path("results/")
 DATA_PATH = Path("data_prep/data/")
 
 # tensorboard summary writer
-WRITER_PATH = 'runs/trained_unsupervised_labels/'
+WRITER_PATH = 'runs/test/'
 tb = SummaryWriter(WRITER_PATH)
 
 
@@ -83,6 +83,7 @@ parser.add_argument('--random_seed', type=int, default=2021, metavar='N')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 print('GPU:', args.cuda)
+
 random_seed = args.random_seed
 
 
@@ -105,15 +106,11 @@ def adjust_learning_rate(optimizers, lr, iter, writer=None):
         writer.add_scalar("Learning rate", new_lr, iter)
 
 
-
-
-
 def train_batch(model, data):
     """Train a model on selected data sample"""
     [amgnn, softmax_module] = model
     [batch_x, label_x, batches_xi, labels_yi, oracles_yi] = data
 
-    # NOTE: separate features per batch
     # slice the first five features which are our risk factors
     z_clinical = batch_x[:, 0, 0, 0:args.clinical_feature_num]
     zi_s_clinical = [batch_xi[:,0,0,0:args.clinical_feature_num] for batch_xi in batches_xi]
@@ -121,11 +118,10 @@ def train_batch(model, data):
     # slice the remaining features after our clinical / risk factors
     z_mri_feature = batch_x[:, :, :, args.clinical_feature_num:]
     zi_s_mri_feature = [batch_xi[:, :, :, args.clinical_feature_num:] for batch_xi in batches_xi]
-
     adj = amgnn.compute_adj(z_clinical, zi_s_clinical)
 
     inputs = [z_clinical, z_mri_feature, zi_s_clinical, zi_s_mri_feature, labels_yi, oracles_yi, adj]
-    out_metric, out_logits = amgnn(*inputs)
+    _, out_logits = amgnn(*inputs)
     logsoft_prob = softmax_module.forward(out_logits)
 
     # Loss
@@ -146,7 +142,7 @@ def test_one_shot(args, fold, test_root, model, test_samples=50, partition='test
     io.cprint('\n**** TESTING BEGIN ***' )
     root = test_root
     data_loader = DataGenerator(root, keys=['CN','MCI','AD'])
-    [amgnn, softmax_module] = model
+    [amgnn, *rest] = model
     amgnn.eval()
     correct = 0
     total = 0
@@ -207,8 +203,8 @@ if __name__ =='__main__':
     predict = Predict(amgnn, softmax_module, args, io_path)
 
 
-    # NOTE: CNN dimension where one CNN is used for learning the edge weight from the absolute difference
-    # between each feature of the feature nodes - see notes 1b.
+    # NOTE: CNN dimension where one CNN is used for learning the edge weight from the
+    # absolute difference between each feature of the feature nodes - see notes 1b.
     io.cprint(str(amgnn))
 
     if args.cuda:
@@ -223,10 +219,9 @@ if __name__ =='__main__':
     val_acc, val_acc_aux = 0, 0
     test_acc = 0
 
+    root = DATA_PATH / 'ad_unsupervised_class_train.npy'
+    data_loader = DataGenerator(root, keys=['CN', 'MCI','AD'])
     for batch_idx in range(args.iterations):
-
-        root = DATA_PATH / 'ad_unsupervised_class_train.npy'
-        data_loader = DataGenerator(root, keys=['CN', 'MCI','AD'])
         data = data_loader.get_task_batch(
                 batch_size=args.batch_size_train,
                 n_way=args.train_N_way,
@@ -272,7 +267,6 @@ if __name__ =='__main__':
             tb.add_scalar("Accuracy", test_acc_aux, batch_idx)
 
             tb = visualize.record_amgnn_bias_metrics(amgnn, tb)
-
 
             amgnn.train()
 

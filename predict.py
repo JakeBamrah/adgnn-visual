@@ -14,7 +14,6 @@ class Predict():
         Provides methods for making Alzheimer's disease predictions on
         a group basis (supervised) and an individual basis (semi-unsupervised)
     """
-
     def __init__(self, amgnn, classifier_module, args, io_path):
         self.amgnn = amgnn
         self.classifier_module = classifier_module
@@ -55,7 +54,7 @@ class Predict():
 
         # compute metric from embeddings
         inputs = [z_clinical, z_mri_feature, zi_s_clinical, xi_s, labels_yi, oracles_yi, adj]
-        output, out_logits = self.amgnn(*inputs)
+        *rest, out_logits = self.amgnn(*inputs)
         Y = self.classifier_module.forward(out_logits)
         y_pred = self.classifier_module.forward(out_logits)
 
@@ -81,7 +80,6 @@ class Predict():
             All nodes are returned in torch.tensor format with shape:
 
         """
-
         loader = DataGenerator(data_root, keys=['CN','MCI','AD'])
         data = loader.get_task_batch(
                 batch_size=sample_size,

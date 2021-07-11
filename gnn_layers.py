@@ -27,10 +27,9 @@ class Gconv(nn.Module):
     def gmul(self, input):
         W, x = input
 
-        x_size = x.size()
         W_size = W.size()
 
-        N = W_size[-2]  # N个节点
+        N = W_size[-2]
         W = W.split(1, 3)
         W = torch.cat(W, 1).squeeze(3)  # W is now a tensor of size (bs, J*N, N)
         output = torch.bmm(W, x)  # output has size (bs, J*N, num_features)
@@ -41,10 +40,10 @@ class Gconv(nn.Module):
 
     def forward(self, input):
         W = input[0]
-        x = self.gmul(input)  # out has size (bs, N, num_inputs)
+        x = self.gmul(input)  # output has size (bs, N, num_inputs)
         x_size = x.size()
         x = x.contiguous()
-        x = x.view(-1, self.num_inputs)  # reshape the input x
+        x = x.view(-1, self.num_inputs)  # reshape input x
         x = self.fc(x)  # has size (bs*N, num_outputs)
 
         if self.bn_bool:
@@ -81,44 +80,12 @@ class Wcompute(nn.Module):
 
     def forward(self, x, W_id,adj):
         W1 = x.unsqueeze(2)     # W1 size: bs x N x 1 x num_features
-        # if self.N_way == 3:
-        #     if self.list == 0:
-        #         w_list = [0, 1, 2, 3, 4, 5, 6]  # cli
-        #     elif self.list == 1:
-        #         w_list = [0, 1, 2, 7, 8, 9, 10, 11, 12, 13, 14, 15]  # score
-        #     elif self.list == 2:
-        #         w_list = [0, 1, 2, 16, 17, 18, 19, 20]  # mri
-        #     elif self.list == 3:
-        #         w_list = list(range(0, 16))  # cli+score
-        #     elif self.list == 4:
-        #         w_list = [0, 1, 2, 3, 4, 5, 6, 16, 17, 18, 19, 20]  # cli+mri
-        #     elif self.list == 5:
-        #         w_list = [0,1,2]+ list(range(7, 21))  # mri+score
-        #     elif self.list == 6:
-        #         w_list = list(range(0, 21))  # cli+score+mri
-        # else:
-        #     if self.list == 0:
-        #         w_list = [0, 1, 2, 3, 4, 5]  # cli
-        #     elif self.list == 1:
-        #         w_list = [0, 1, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # score
-        #     elif self.list == 2:
-        #         w_list = [0, 1, 2, 15, 16, 17, 18, 19]  # mri
-        #     elif self.list == 3:
-        #         w_list = list(range(0, 15))  # cli+score
-        #     elif self.list == 4:
-        #         w_list = [0, 1, 2, 3, 4, 5, 15, 16, 17, 18, 19]  # cli+mri
-        #     elif self.list == 5:
-        #         w_list = list(range(6, 20))  # mri+score
-        #     elif self.list == 6:
-        #         w_list = list(range(0, 20))  # cli+score+mri
         w_list = list(range(0,self.args.test_N_way)) + list(range(self.args.test_N_way + self.args.clinical_feature_num, self.args.test_N_way + self.args.clinical_feature_num + self.args.w_feature_num))
         W1 = W1[:,:,:, w_list]
         W2 = torch.transpose(W1, 1, 2)  # W2 size: bs x 1 x N x num_feature
 
         W_new = torch.abs(W1 - W2)  # W_new size: bs x N x N x num_features
         W_new = torch.transpose(W_new, 1, 3)  # size: bs x num_features x N x N
-        # W_new = 0-W_new.pow(2)
-        # W_new = torch.exp(W_new)
 
         W_new = self.conv2d_1(W_new)
         W_new = self.bn_1(W_new)
@@ -139,11 +106,11 @@ class Wcompute(nn.Module):
         W_new = F.leaky_relu(W_new)
 
         W_new = self.conv2d_last(W_new)
-        W_new = torch.transpose(W_new, 1, 3) #size: bs x N x N x 1
+        # size: bs x N x N x 1
+        W_new = torch.transpose(W_new, 1, 3)
 
         if self.args.cuda:
             adj = adj.cuda()
-        # W_new = W_new + adj
         W_new = torch.mul(W_new, adj)
 
         if self.activation == 'softmax':

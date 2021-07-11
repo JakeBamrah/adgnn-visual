@@ -4,7 +4,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 def record_amgnn_bias_metrics(amgnn, writer):
     """Expects AMGNN module and tensorboard summary writer"""
-
     for id, l in enumerate(amgnn.gnn_obj.modules()):
         class_name = l.__class__.__name__
         if class_name == 'Wcompute':
@@ -25,7 +24,6 @@ def build_feature_embedding_graph(data, writer, tag="AD samples"):
         Build tensorboard projection of features and their respective labels.
         Data format expected as: { label: [[node_features], ..., [node_features] }
     """
-
     labels = []
     features = []
     for k, v in data.items():
@@ -44,4 +42,3 @@ def write_model_graph(amgnn, writer, data):
 
 def build_graph_pipeline_graph(amgnn, data):
     pass
-
