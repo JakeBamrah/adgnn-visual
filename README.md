@@ -24,3 +24,8 @@ This code has been developed off of the following code bases:
 - [AutoMetric GNN](https://github.com/SJTUBME-QianLab/AutoMetricGNN)
 
 Given the time constraints, none of this would have been possible without the great work of these authors.
+
+
+## Publications
+
+[*doi/10.1049/htl2.12037*](https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/htl2.12037)—I.E.T Journals
